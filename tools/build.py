@@ -120,7 +120,7 @@ def b64(name):
 
 # Bump this whenever the look changes: new file names force GitHub and
 # browsers to drop their cached copies. Update README.md to match.
-ASSET_VERSION = "lq1"
+ASSET_VERSION = "lq2"
 
 
 def write(name, content):
@@ -504,29 +504,46 @@ def swinger(color, accent):
 
 
 def build_footer():
-    W, H = 1200, 220
-    css = f"""
-.cross{{animation:cross 8s linear infinite}}@keyframes cross{{from{{transform:translateX(-150px)}}to{{transform:translateX({W+150}px)}}}}
-.pend{{animation:pend 1.33s ease-in-out infinite alternate}}@keyframes pend{{from{{transform:rotate(40deg)}}to{{transform:rotate(-40deg)}}}}
-@media (prefers-reduced-motion:reduce){{.cross{{transform:translateX(190px)!important}}}}
+    W, H = 1200, 460
+    rnd = random.Random(616)
+    css = """
+.kb{transform-origin:900px 200px;animation:kb 20s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1.02)}to{transform:scale(1.09) translate(-10px,6px)}}
+.gr,.gb{opacity:0;animation:gl 8s steps(1) infinite}.gb{animation-delay:.12s}
+@keyframes gl{0%,88%,100%{opacity:0;transform:none}89%{opacity:.7;transform:translate(12px,0)}91%{opacity:.6;transform:translate(-9px,0)}93%{opacity:0}}
+.rise{animation:rise linear infinite}@keyframes rise{to{transform:translateY(-560px)}}
 """
-    scene = haze_scene(W, H, 55, zoom=1.5)
-    hero = (f'<g class="cross"><g transform="translate(0 -10)"><g class="pend">'
-            f'<line x1="0" y1="0" x2="0" y2="104" stroke="#fff" stroke-width="1.6" opacity=".9"/>'
-            f'<g transform="translate(0 104) scale(.58)">{swinger("#0b1630", RED)}</g></g></g></g>')
-    inner = (scene + hero + glass("g", 330, 46, 540, 128, 64, scene + hero, shine_delay=1)
-             + glitch_text(600, 112, "KEEP SWINGING", 40, 900, "middle", 'letter-spacing="3"')
-             + f'<text x="600" y="144" text-anchor="middle" font-family="{MONO}" font-size="13" fill="{ICE}" letter-spacing="2">{esc(CONFIG["footer"])}</text>')
-    write("footer.svg", svg(W, H, "keep swinging", css, "", framed(W, H, 24, inner)))
+    defs = (f'<image id="gw" href="{GWEN}" x="0" y="-12" width="{W}" height="675" preserveAspectRatio="xMidYMin slice"/>'
+            f'<filter id="ronly"><feColorMatrix values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"/></filter>'
+            f'<filter id="conly"><feColorMatrix values="0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>'
+            f'<clipPath id="bands"><rect y="60" width="{W}" height="18"/><rect y="250" width="{W}" height="30"/><rect y="390" width="{W}" height="12"/></clipPath>'
+            f'<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="#050a1c" stop-opacity=".55"/>'
+            f'<stop offset=".55" stop-color="#050a1c" stop-opacity="0"/></linearGradient>')
+    art = '<g class="kb"><use href="#gw"/></g>'
+    glitch = ('<g class="kb"><g clip-path="url(#bands)">'
+              '<g class="gr" style="mix-blend-mode:screen"><use href="#gw" filter="url(#ronly)"/></g>'
+              '<g class="gb" style="mix-blend-mode:screen"><use href="#gw" filter="url(#conly)"/></g></g></g>')
+    motes = "".join(
+        f'<circle class="rise" style="animation-duration:{rnd.uniform(5,11):.1f}s;animation-delay:-{rnd.uniform(0,11):.1f}s" '
+        f'cx="{rnd.uniform(0,W):.0f}" cy="{rnd.uniform(H,H+40):.0f}" r="{rnd.uniform(1,2.4):.1f}" '
+        f'fill="{rnd.choice(["#fff", CYN, MAG])}" opacity="{rnd.uniform(.3,.8):.2f}"/>' for _ in range(34))
+    px, py, pw, ph = 64, 150, 540, 160
+    inner = (art + glitch
+             + f'<rect width="{W}" height="{H}" fill="url(#fade)"/>' + motes
+             + glass("pill", px, py, pw, ph, ph / 2, art, shine_delay=1)
+             + glitch_text(px + pw / 2, py + 84, "KEEP SWINGING", 52, 900, "middle", 'letter-spacing="3"')
+             + f'<text x="{px + pw/2}" y="{py + 120}" text-anchor="middle" font-family="{MONO}" font-size="14" '
+             f'font-weight="700" fill="#fff" letter-spacing="2">{esc(CONFIG["footer"])}</text>')
+    write("footer.svg", svg(W, H, "keep swinging", css, defs, framed(W, H, 24, inner)))
 
 
-HAZE = POSTER = PORTRAIT = ""
+HAZE = POSTER = PORTRAIT = GWEN = ""
 
 if __name__ == "__main__":
     HAZE = b64("haze.jpg")
     print("building assets...")
     if "--stats" not in sys.argv:
-        POSTER, PORTRAIT = b64("hero.jpg"), b64("portrait.jpg")
+        POSTER, PORTRAIT, GWEN = b64("hero.jpg"), b64("portrait.jpg"), b64("gwen.jpg")
         build_hero()
         build_id()
         build_stack()

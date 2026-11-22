@@ -118,7 +118,14 @@ def b64(name):
         return "data:image/jpeg;base64," + base64.b64encode(f.read()).decode()
 
 
+# Bump this whenever the look changes: new file names force GitHub and
+# browsers to drop their cached copies. Update README.md to match.
+ASSET_VERSION = "lq1"
+
+
 def write(name, content):
+    stem, ext = os.path.splitext(name)
+    name = f"{stem}-{ASSET_VERSION}{ext}"
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
         f.write(content)

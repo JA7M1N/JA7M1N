@@ -1,5 +1,5 @@
 """
-Spider-Verse x frosted-glass GitHub profile builder.
+Spider-Verse x liquid-glass GitHub profile builder.
 
     python tools/build.py            # rebuild every SVG in ./assets
     python tools/build.py --stats    # only refresh the live stats card
@@ -92,6 +92,19 @@ GLASS_DEFS = """
 <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .08 0"/></filter>
 <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset=".35" stop-color="#fff" stop-opacity=".18"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity=".5"/></linearGradient>
 <linearGradient id="sheen" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset=".45" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity=".02"/></linearGradient>
+<filter id="liquid" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+  <feTurbulence type="fractalNoise" baseFrequency=".006 .011" numOctaves="2" seed="7" result="n">
+    <animate attributeName="baseFrequency" dur="14s" values=".006 .011;.009 .007;.006 .011" repeatCount="indefinite"/>
+  </feTurbulence>
+  <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="b"/>
+  <feDisplacementMap in="b" in2="n" scale="58" xChannelSelector="R" yChannelSelector="G" result="d"/>
+  <feColorMatrix in="d" type="saturate" values="1.55" result="s"/>
+  <feComponentTransfer in="s"><feFuncR type="linear" slope="1.08" intercept=".02"/><feFuncG type="linear" slope="1.08" intercept=".02"/><feFuncB type="linear" slope="1.1" intercept=".03"/></feComponentTransfer>
+</filter>
+<filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter>
+<linearGradient id="rimA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset=".3" stop-color="#fff" stop-opacity=".25"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/></linearGradient>
+<linearGradient id="rimB" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset=".35" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="spec" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <linearGradient id="shineG" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 """
 
@@ -118,21 +131,28 @@ def svg(w, h, label, css, defs, body):
             f'<defs><style>{BASE_CSS}{css}</style>{GLASS_DEFS}{defs}</defs>{body}</svg>')
 
 
-def glass(cid, x, y, w, h, r, backdrop, tint=NAVY, tint_op=.30, shine_delay=0.0):
-    """Frosted glass panel: blurred copy of whatever is behind it + tint + grain + edge light."""
+def glass(cid, x, y, w, h, r, backdrop, tint=None, tint_op=None, shine_delay=0.0):
+    cx, cy = x + w / 2, y + h / 2
+    sh = min(h * .42, 90)
     return (
-        f'<rect x="{x}" y="{y+14}" width="{w}" height="{h}" rx="{r}" fill="#01050f" opacity=".45" filter="url(#shadow)"/>'
+        f'<rect x="{x}" y="{y+18}" width="{w}" height="{h}" rx="{r}" fill="#01050f" opacity=".32" filter="url(#shadow)"/>'
         f'<clipPath id="{cid}"><rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}"/></clipPath>'
         f'<g clip-path="url(#{cid})">'
-        f'<g filter="url(#frost)">{backdrop}</g>'
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{tint}" opacity="{tint_op}"/>'
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="url(#sheen)"/>'
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" filter="url(#grain)"/>'
+        # lens: the scene behind is magnified a little, bent and kept sharp-ish
+        f'<g filter="url(#liquid)"><g transform="translate({cx} {cy}) scale(1.08) translate({-cx} {-cy})">{backdrop}</g></g>'
+        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="#0a1a3a" opacity=".26"/>'
+        # inner edge glow (light caught inside the thickness of the glass)
+        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="none" stroke="#fff" stroke-width="16" opacity=".22" filter="url(#glow)"/>'
+        # specular highlight along the top curve
+        f'<rect x="{x+r*.6}" y="{y+5}" width="{w-r*1.2}" height="{sh:.0f}" rx="{min(r, sh/2):.0f}" fill="url(#spec)" opacity=".5"/>'
         f'<g transform="skewX(-20)"><rect class="shine" style="animation-delay:{shine_delay}s" '
-        f'x="{x-260}" y="{y-40}" width="130" height="{h+80}" fill="url(#shineG)"/></g>'
+        f'x="{x-260}" y="{y-40}" width="90" height="{h+80}" fill="url(#shineG)"/></g>'
         f'</g>'
-        f'<rect x="{x+.75}" y="{y+.75}" width="{w-1.5}" height="{h-1.5}" rx="{r}" fill="none" '
-        f'stroke="url(#edge)" stroke-width="1.5"/>')
+        # double rim: bright top-left edge + softer bottom-right edge, with a hint of colour fringing
+        f'<rect x="{x+.5}" y="{y+.5}" width="{w-1}" height="{h-1}" rx="{r}" fill="none" stroke="{CYN}" stroke-opacity=".35" stroke-width="1" transform="translate(-1 0)"/>'
+        f'<rect x="{x+.5}" y="{y+.5}" width="{w-1}" height="{h-1}" rx="{r}" fill="none" stroke="{RED}" stroke-opacity=".3" stroke-width="1" transform="translate(1 0)"/>'
+        f'<rect x="{x+1}" y="{y+1}" width="{w-2}" height="{h-2}" rx="{r}" fill="none" stroke="url(#rimA)" stroke-width="2"/>'
+        f'<rect x="{x+3}" y="{y+3}" width="{w-6}" height="{h-6}" rx="{r-2}" fill="none" stroke="url(#rimB)" stroke-width="1.2"/>')
 
 
 def glitch_text(x, y, text, size, weight=900, anchor="start", extra=""):
@@ -194,7 +214,7 @@ def build_hero():
     rnd = random.Random(1610)
     roles = CONFIG["roles"]
     n = len(roles)
-    cx, cy, cw, ch = 742, 140, 418, 392
+    cx, cy, cw, ch = 34, 150, 384, 392
 
     css = f"""
 .kb{{transform-origin:600px 337px;animation:kb 22s ease-in-out infinite alternate}}
@@ -216,7 +236,7 @@ def build_hero():
             f'<filter id="conly"><feColorMatrix values="0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>'
             f'<clipPath id="bands"><rect y="70" width="{W}" height="26"/><rect y="210" width="{W}" height="12"/>'
             f'<rect y="330" width="{W}" height="40"/><rect y="520" width="{W}" height="18"/></clipPath>'
-            f'<radialGradient id="vig" cx=".42" cy=".42" r=".8"><stop offset=".55" stop-color="#030a18" stop-opacity="0"/>'
+            f'<radialGradient id="vig" cx=".62" cy=".4" r=".8"><stop offset=".55" stop-color="#030a18" stop-opacity="0"/>'
             f'<stop offset="1" stop-color="#030a18" stop-opacity=".75"/></radialGradient>'
             f'<linearGradient id="shardG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/>'
             f'<stop offset="1" stop-color="#fff" stop-opacity=".04"/></linearGradient>'
@@ -232,9 +252,9 @@ def build_hero():
               f'<g class="gb" style="mix-blend-mode:screen"><use href="#poster" filter="url(#conly)"/></g></g></g>')
 
     shards = []
-    for (x, y, s, d) in [(70, 80, 1.0, 7), (250, 560, .8, 9), (580, 610, .6, 6),
-                         (640, 70, .7, 8), (1120, 70, .9, 10), (1010, 600, .7, 7.5),
-                         (60, 360, .55, 6.5), (690, 330, .45, 8.5)]:
+    for (x, y, s, d) in [(60, 50, .8, 7), (300, 590, .7, 9), (520, 610, .6, 6),
+                         (470, 60, .6, 8), (1110, 60, .7, 10), (1080, 590, .7, 7.5),
+                         (450, 330, .45, 6.5), (880, 620, .45, 8.5)]:
         pts = [(0, 0), (60, -12), (78, 40), (22, 66)] if rnd.random() < .5 else [(0, 0), (70, 10), (30, 62)]
         p = " ".join(f"{x + px*s:.0f},{y + py*s:.0f}" for px, py in pts)
         shards.append(f'<polygon class="shard" style="animation-duration:{d}s;animation-delay:-{rnd.uniform(0,6):.1f}s" '
@@ -255,11 +275,11 @@ def build_hero():
                      f'{rnd.uniform(5,12):.1f}s;animation-delay:-{rnd.uniform(0,12):.1f}s">{shape}</g>')
 
     name = CONFIG["name"].upper()
-    nsize = int(min(92, 360 / (0.64 * max(len(name), 1))))
+    nsize = int(min(92, (cw - 72) / (0.64 * max(len(name), 1))))
     tx = cx + 34
     roles_svg = "".join(
         f'<text class="role r{i}" style="animation-delay:{i*3}s" x="{tx}" y="{cy+282}" font-family="{MONO}" '
-        f'font-size="17" font-weight="700" fill="{CYN}">&gt; {esc(r)}<tspan class="cur">_</tspan></text>'
+        f'font-size="17" font-weight="700" fill="#fff"><tspan fill="{CYN}">&gt;</tspan> {esc(r)}<tspan class="cur">_</tspan></text>'
         for i, r in enumerate(roles))
     pill_w = len(CONFIG["status"]) * 8.6 + 52
     card_content = (
@@ -267,7 +287,7 @@ def build_hero():
         f'<g transform="translate({cx+cw-42} {cy+40})">{spider(RED, 1.15)}</g>'
         f'<text x="{tx}" y="{cy+100}" font-family="{SANS}" font-size="19" font-weight="600" fill="#fff" letter-spacing="6" opacity=".9">{esc(CONFIG["greeting"])}</text>'
         + glitch_text(tx - 3, cy + 100 + nsize * .95, name, nsize, 900, extra='letter-spacing="1"')
-        + f'<text x="{tx}" y="{cy+226}" font-family="{SANS}" font-size="19" font-style="italic" fill="#fff" opacity=".92">{esc(CONFIG["tagline"])}</text>'
+        + f'<text x="{tx}" y="{cy+226}" font-family="{SANS}" font-size="17" font-style="italic" fill="#fff" opacity=".92">{esc(CONFIG["tagline"])}</text>'
         f'<rect x="{tx}" y="{cy+246}" width="{cw-68}" height="2" fill="url(#rule)"/>'
         + roles_svg
         + f'<g transform="translate({tx} {cy+314})"><rect width="{pill_w:.0f}" height="36" rx="18" fill="#fff" fill-opacity=".12" stroke="#fff" stroke-opacity=".4"/>'

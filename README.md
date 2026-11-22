@@ -19,4 +19,4 @@
 
 <img src="./assets/footer.svg" alt="Keep swinging" width="100%">
 
-<p align="center"><sub>fan tribute · poster art from <i>Spider-Man: Into the Spider-Verse</i> © Sony Pictures Animation / Marvel</sub></p>
+<p align="center"><sub>fan tribute · Spider-Man &amp; Miles Morales © Marvel / Sony Pictures Animation · banner wallpaper via wallpapers-clan.com · ID art from the <i>Into the Spider-Verse</i> poster</sub></p>

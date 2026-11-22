@@ -39,6 +39,12 @@ CONFIG = {
         ("HTML", "#e34f26"), ("CSS", "#663399"), ("Git", "#f05032"),
     ],
     "projects": [
+        ("ORBITGUARD", "OrbitGuard",
+         "Space safety platform that screens satellites for close approaches and computes collision risk.",
+         "TypeScript", "#3178c6"),
+        ("ORBITMIND", "OrbitMind",
+         "Maps floods from satellite radar with an Attention U-Net so responders know where to go first.",
+         "Python", "#3776ab"),
         ("CityPulse-AI", "CityPulse AI",
          "AI dashboard that predicts traffic, air pollution and waste so cities can act before problems hit.",
          "TypeScript", "#3178c6"),
